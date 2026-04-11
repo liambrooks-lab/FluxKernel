@@ -183,9 +183,3 @@ FluxKernel's agentic capabilities are constrained by a layered security model:
 2. **Execution Timeout**: Subprocess code execution is capped at **10 seconds**. Runaway processes are terminated with exit code `124`.
 3. **Diff Approval Gate**: No AI-proposed file change reaches disk without explicit user approval via the `DiffViewer` UI.
 4. **CORS Lockdown**: In production, replace `allow_origins=["*"]` with your frontend's exact origin.
-
----
-
-## License
-
-MIT © FluxKernel Contributors
