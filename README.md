@@ -1,8 +1,10 @@
 <p align="center">
-  <img src="assets/logo/fluxkernel-glyph-dark.svg" alt="FluxKernel Logo" width="96" height="96"/>
+  <img src="frontend/public/logo.svg" alt="FluxKernel Logo" width="128" height="128"/>
 </p>
 
-<h1 align="center">FluxKernel</h1>
+<p align="center">
+  <img src="frontend/public/brand.svg" alt="FluxKernel" height="64" />
+</p>
 
 <p align="center">
   <strong>An MNC-grade, OS-level AI Agent with an unfiltered cognitive core.</strong><br/>

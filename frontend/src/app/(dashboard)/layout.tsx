@@ -28,7 +28,7 @@ export default function DashboardLayout({
             >
               <Menu className="h-5 w-5" />
             </button>
-            <span className="font-semibold select-none">FluxKernel</span>
+            <img src="/brand.svg" alt="FluxKernel" className="h-5 w-auto object-contain select-none text-white" />
           </div>
           <ThemeToggle />
         </header>
@@ -79,7 +79,15 @@ export default function DashboardLayout({
           {!isMobile && (
             <header className="flex h-12 items-center justify-between border-b border-border/60 px-4 flex-shrink-0 bg-background">
               <div className="flex items-center gap-2 text-sm text-foreground/80 font-medium">
-                {activeFile ? `src / ${activeFile}` : "FluxKernel / Session"}
+                {activeFile ? (
+                  `src / ${activeFile}`
+                ) : (
+                  <div className="flex items-center gap-2 text-white">
+                    <img src="/logo.svg" alt="Logo" className="h-4 w-4" />
+                    <img src="/brand.svg" alt="FluxKernel" className="h-4 w-auto object-contain" />
+                    <span className="text-muted-foreground">/ Session</span>
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-3">
                 <button className="text-muted-foreground hover:text-foreground transition-colors p-1" title="Terminal">

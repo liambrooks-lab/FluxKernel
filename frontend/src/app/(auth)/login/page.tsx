@@ -39,10 +39,10 @@ export default function LoginPage() {
       <div className="relative z-10 w-full max-w-md px-6">
         {/* Logo / Brand */}
         <div className="mb-8 flex flex-col items-center gap-2">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-600/20 border border-violet-500/30 shadow-lg shadow-violet-900/30">
-            <Zap className="h-6 w-6 text-violet-400" />
+          <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-violet-600/20 border border-violet-500/30 shadow-lg shadow-violet-900/30 p-2 overflow-hidden">
+            <img src="/logo.svg" alt="FluxKernel Logo" className="w-full h-full object-contain" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">FluxKernel</h1>
+          <img src="/brand.svg" alt="FluxKernel" className="h-8 w-auto object-contain mt-2 text-white" />
           <p className="text-sm text-zinc-400">Sign in to your workspace</p>
         </div>
 

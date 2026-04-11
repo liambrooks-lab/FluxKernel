@@ -1,38 +1,32 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
   <defs>
-    <linearGradient id="g1" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#e2e8f0"/>
-      <stop offset="100%" stop-color="#94a3b8"/>
-    </linearGradient>
-    <linearGradient id="g2" x1="512" y1="0" x2="0" y2="512" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/>
-      <stop offset="100%" stop-color="#64748b" stop-opacity="0.6"/>
-    </linearGradient>
-    <filter id="glow">
-      <feGaussianBlur stdDeviation="6" result="blur"/>
-      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    <filter id="redGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
     </filter>
   </defs>
-  <polygon points="256,36 452,146 452,366 256,476 60,366 60,146"
-    stroke="url(#g2)" stroke-width="8" stroke-linejoin="round" fill="none" opacity="0.25"/>
-  <polygon points="256,92 408,178 408,334 256,420 104,334 104,178"
-    stroke="url(#g2)" stroke-width="3" stroke-linejoin="round" fill="none" opacity="0.15"/>
-  <rect x="138" y="156" width="44" height="200" rx="8" fill="url(#g1)" filter="url(#glow)"/>
-  <rect x="138" y="156" width="130" height="44" rx="8" fill="url(#g1)"/>
-  <rect x="138" y="234" width="96" height="40" rx="8" fill="url(#g1)" opacity="0.85"/>
-  <rect x="330" y="156" width="44" height="200" rx="8" fill="url(#g1)" filter="url(#glow)"/>
-  <rect x="295" y="154" width="44" height="132" rx="8" fill="url(#g1)" opacity="0.9"
-    transform="rotate(35 295 154)"/>
-  <rect x="234" y="236" width="44" height="140" rx="8" fill="url(#g1)" opacity="0.9"
-    transform="rotate(-35 330 256)"/>
-  <circle cx="256" cy="256" r="18" fill="#ffffff" opacity="0.12"/>
-  <circle cx="256" cy="256" r="9"  fill="url(#g1)" filter="url(#glow)"/>
-  <circle cx="160" cy="178" r="5" fill="#94a3b8" opacity="0.5"/>
-  <circle cx="352" cy="178" r="5" fill="#94a3b8" opacity="0.5"/>
-  <circle cx="160" cy="334" r="5" fill="#94a3b8" opacity="0.5"/>
-  <circle cx="352" cy="334" r="5" fill="#94a3b8" opacity="0.5"/>
-  <line x1="160" y1="178" x2="256" y2="256" stroke="#94a3b8" stroke-width="1.5" opacity="0.2"/>
-  <line x1="352" y1="178" x2="256" y2="256" stroke="#94a3b8" stroke-width="1.5" opacity="0.2"/>
-  <line x1="160" y1="334" x2="256" y2="256" stroke="#94a3b8" stroke-width="1.5" opacity="0.2"/>
-  <line x1="352" y1="334" x2="256" y2="256" stroke="#94a3b8" stroke-width="1.5" opacity="0.2"/>
+
+  <!-- Intense red glow behind the cube -->
+  <circle cx="50" cy="53" r="22" fill="#E5233D" filter="url(#redGlow)" opacity="0.4"/>
+
+  <!-- Cube structure -->
+  <g transform="translate(0, -2)">
+    <!-- Red edges / back faces -->
+    <polygon points="50,22 83,37 50,52 17,37" fill="#E6213B" />
+    <polygon points="17,37 50,52 50,85 17,70" fill="#CD1A32" />
+    <polygon points="50,52 83,37 83,70 50,85" fill="#B21429" />
+    
+    <!-- 4 Black Panels to complete the design -->
+    <!-- Upper Left -->
+    <polygon points="22,42 46.5,53 46.5,65 22,54" fill="#18181B" />
+    <!-- Lower Left -->
+    <polygon points="22,58 46.5,69 46.5,81 22,70" fill="#18181B" />
+    <!-- Upper Right -->
+    <polygon points="53.5,53 78,42 78,54 53.5,65" fill="#121214" />
+    <!-- Lower Right -->
+    <polygon points="53.5,69 78,58 78,70 53.5,81" fill="#121214" />
+  </g>
 </svg>
