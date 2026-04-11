@@ -16,7 +16,7 @@
   <img alt="Python" src="https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white"/>
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white"/>
   <img alt="Docker" src="https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white"/>
-  <img alt="License" src="https://img.shields.io/badge/License-MIT-green?style=flat-square"/>
+  <img alt="License" src="https://img.shields.io/badge/License-Authorised-green?style=flat-square"/>
 </p>
 
 ---
