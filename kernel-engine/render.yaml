@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: fluxkernel-api
+    env: python
+    region: oregon
+    plan: free
+    rootDir: kernel-engine
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: fluxkernel-db
+          property: connectionString
+      - key: LOCAL_LLM_URL
+        value: http://localhost:11434
+
+databases:
+  - name: fluxkernel-db
+    plan: free
+    databaseName: fluxkernel
+    user: fluxuser
