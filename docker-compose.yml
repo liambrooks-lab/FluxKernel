@@ -1,0 +1,46 @@
+version: "3.9"
+
+services:
+  # ── PostgreSQL Database ───────────────────────────────────────────────────────
+  db:
+    image: postgres:15-alpine
+    container_name: fluxkernel_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: fluxuser
+      POSTGRES_PASSWORD: fluxpass
+      POSTGRES_DB: fluxkernel
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fluxuser -d fluxkernel"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── FastAPI Kernel Engine ─────────────────────────────────────────────────────
+  api:
+    build:
+      context: ./kernel-engine
+      dockerfile: Dockerfile
+    container_name: fluxkernel_api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://fluxuser:fluxpass@db:5432/fluxkernel
+      LOCAL_LLM_URL: http://host.docker.internal:11434
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      # Mount live workspace so the AI can read/write host files
+      - ./workspace:/app/workspace
+    extra_hosts:
+      # Allows the container to reach Ollama running on the host machine
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  postgres_data:
