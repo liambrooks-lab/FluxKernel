@@ -20,6 +20,19 @@ services:
       timeout: 5s
       retries: 5
 
+  # ── Redis (Feature 1: Async Task Queue) ───────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: fluxkernel_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # ── FastAPI Kernel Engine ─────────────────────────────────────────────────────
   api:
     build:
@@ -30,16 +43,46 @@ services:
     environment:
       DATABASE_URL: postgresql://fluxuser:fluxpass@db:5432/fluxkernel
       LOCAL_LLM_URL: http://host.docker.internal:11434
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      # Uncomment and set your cloud LLM keys for Feature 3:
+      # GEMINI_API_KEY: ""
+      # ANTHROPIC_API_KEY: ""
     ports:
       - "8000:8000"
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     volumes:
-      # Mount live workspace so the AI can read/write host files
       - ./workspace:/app/workspace
     extra_hosts:
-      # Allows the container to reach Ollama running on the host machine
+      - "host.docker.internal:host-gateway"
+
+  # ── Celery Worker (Feature 1: Background Task Execution) ──────────────────────
+  worker:
+    build:
+      context: ./kernel-engine
+      dockerfile: Dockerfile
+    container_name: fluxkernel_worker
+    restart: unless-stopped
+    # Override the default CMD to start the Celery worker instead of uvicorn
+    command: >
+      celery -A app.core.task_queue.celery_app worker
+      --loglevel=info
+      --concurrency=4
+      --queues=celery
+    environment:
+      DATABASE_URL: postgresql://fluxuser:fluxpass@db:5432/fluxkernel
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./workspace:/app/workspace
+    extra_hosts:
       - "host.docker.internal:host-gateway"
 
 volumes:

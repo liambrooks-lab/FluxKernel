@@ -17,6 +17,8 @@ class ChatResponse(BaseModel):
     message_id: int
     content: str
     role: str
+    routed_to: str = "unknown"
+    routing_reason: str = ""
 
 @router.post("/", response_model=ChatResponse)
 async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
@@ -48,11 +50,14 @@ async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
     db.commit()
     
     # 4. Call LLM Router
-    llm_response_text = await route_llm(
+    llm_result = await route_llm(
         prompt=request.prompt,
         persona_name=persona.name,
         system_prompt=persona.system_prompt
     )
+    llm_response_text = llm_result["content"]
+    routed_to = llm_result.get("routed_to", "unknown")
+    routing_reason = llm_result.get("reason", "")
     
     # 5. Save Kernel Message
     kernel_msg = Message(session_id=chat_session.id, role="kernel", content=llm_response_text)
@@ -64,5 +69,7 @@ async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
         session_id=chat_session.id,
         message_id=kernel_msg.id,
         content=kernel_msg.content,
-        role=kernel_msg.role
+        role=kernel_msg.role,
+        routed_to=routed_to,
+        routing_reason=routing_reason,
     )
