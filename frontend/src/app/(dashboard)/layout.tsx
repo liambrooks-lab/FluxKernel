@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useFluxStore } from "@/store/useFluxStore";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -28,7 +29,7 @@ export default function DashboardLayout({
             >
               <Menu className="h-5 w-5" />
             </button>
-            <img src="/brand.svg" alt="FluxKernel" className="h-5 w-auto object-contain select-none text-white" />
+            <Image src="/brand.svg" alt="FluxKernel" width={132} height={20} className="h-5 w-auto object-contain select-none text-white" />
           </div>
           <ThemeToggle />
         </header>
@@ -83,8 +84,8 @@ export default function DashboardLayout({
                   `src / ${activeFile}`
                 ) : (
                   <div className="flex items-center gap-2 text-white">
-                    <img src="/logo.svg" alt="Logo" className="h-4 w-4" />
-                    <img src="/brand.svg" alt="FluxKernel" className="h-4 w-auto object-contain" />
+                    <Image src="/logo.svg" alt="Logo" width={16} height={16} className="h-4 w-4" />
+                    <Image src="/brand.svg" alt="FluxKernel" width={114} height={16} className="h-4 w-auto object-contain" />
                     <span className="text-muted-foreground">/ Session</span>
                   </div>
                 )}

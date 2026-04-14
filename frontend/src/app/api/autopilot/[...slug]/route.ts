@@ -14,8 +14,9 @@ const BACKEND_URL = process.env.BACKEND_URL ?? "http://localhost:8000";
 
 async function handler(
   req: NextRequest,
-  { params }: { params: { slug: string[] } },
+  context: { params: Promise<{ slug: string[] }> },
 ) {
+  const params = await context.params;
   const slugPath = (params.slug ?? []).join("/");
   const backendTarget = `${BACKEND_URL}/api/v1/autopilot/${slugPath}`;
 

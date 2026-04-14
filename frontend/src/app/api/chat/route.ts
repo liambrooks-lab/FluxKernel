@@ -2,27 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 const BACKEND_URL = process.env.BACKEND_URL ?? "http://localhost:8000";
 
-export interface ChatPayload {
-  session_id?: number | null;
-  prompt: string;
-  persona_name?: string;
-}
-
 export async function POST(req: NextRequest) {
-  let body: ChatPayload;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON payload." }, { status: 400 });
-  }
-
-  const { prompt, session_id, persona_name = "Standard" } = body;
-
-  if (!prompt?.trim()) {
-    return NextResponse.json({ error: "Prompt cannot be empty." }, { status: 422 });
-  }
-
-  // --- SSE Stream Setup ---
+  const contentType = req.headers.get("content-type")?.toLowerCase() ?? "";
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({
@@ -32,11 +13,27 @@ export async function POST(req: NextRequest) {
       };
 
       try {
-        const backendResponse = await fetch(`${BACKEND_URL}/api/v1/chat/`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ session_id, prompt, persona_name }),
-        });
+        let backendResponse: Response;
+
+        if (contentType.includes("multipart/form-data")) {
+          const incoming = await req.formData();
+          const formData = new FormData();
+          for (const [key, value] of incoming.entries()) {
+            formData.append(key, value);
+          }
+
+          backendResponse = await fetch(`${BACKEND_URL}/api/v1/chat/`, {
+            method: "POST",
+            body: formData,
+          });
+        } else {
+          const body = await req.json();
+          backendResponse = await fetch(`${BACKEND_URL}/api/v1/chat/`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+        }
 
         if (!backendResponse.ok) {
           const errorText = await backendResponse.text();
@@ -46,22 +43,19 @@ export async function POST(req: NextRequest) {
         }
 
         const data = await backendResponse.json();
-
-        // Emit the complete response as an SSE event
         enqueueEvent({
           type: "message",
           session_id: data.session_id,
           message_id: data.message_id,
           role: data.role,
           content: data.content,
+          mode: data.mode,
         });
-
-        // Signal stream completion
         enqueueEvent({ type: "done" });
-      } catch (err) {
+      } catch (error) {
         enqueueEvent({
           type: "error",
-          message: err instanceof Error ? err.message : "Unknown upstream error.",
+          message: error instanceof Error ? error.message : "Unknown upstream error.",
         });
       } finally {
         controller.close();
@@ -78,3 +72,4 @@ export async function POST(req: NextRequest) {
     },
   });
 }
+

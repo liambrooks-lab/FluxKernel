@@ -1,18 +1,21 @@
-/**
- * useFluxStore.ts — Central Zustand store for FluxKernel UI state.
- *
- * Extended in this version with:
- *  - Feature 4: Auto-Pilot loop state & actions (isAutoPilot, loopStatus, etc.)
- */
 import { create } from "zustand";
-import { sendMessage as apiSendMessage, startAgenticLoop, abortAgenticLoop as apiAbortLoop, streamLoopEvents, approveCodeDiff } from "@/lib/apiClient";
-import { PERSONA_DEFAULTS } from "@/lib/constants";
+
+import {
+  abortAgenticLoop as apiAbortLoop,
+  approveCodeDiff,
+  PendingAttachment,
+  sendMessage as apiSendMessage,
+  startAgenticLoop,
+  streamLoopEvents,
+} from "@/lib/apiClient";
+import { COGNITIVE_MODES, DEFAULT_MODE } from "@/lib/constants";
 
 export interface Message {
   id: string;
   role: "user" | "kernel";
   content: string;
   timestamp: number;
+  mode?: string;
 }
 
 export interface DiffEntry {
@@ -24,7 +27,6 @@ export interface DiffEntry {
 export type LoopStatus = "idle" | "running" | "completed" | "aborted" | "failed";
 
 interface FluxState {
-  // ── Existing chat state ────────────────────────────────────────────────────
   activePersona: string;
   activeFile: string | null;
   isMobileSidebarOpen: boolean;
@@ -38,48 +40,32 @@ interface FluxState {
   toggleMobileSidebar: () => void;
   addMessage: (message: Message) => void;
   setStreaming: (isStreaming: boolean) => void;
+  resetSession: () => void;
+  sendMessage: (prompt: string, attachments?: PendingAttachment[]) => Promise<void>;
 
-  /**
-   * Appends the user message immediately, then opens an SSE stream and
-   * progressively builds the kernel reply token-by-token in the store.
-   * If isAutoPilot is enabled, routes to the agentic loop instead.
-   */
-  sendMessage: (prompt: string) => Promise<void>;
-
-  // ── Feature 4: Auto-Pilot state ────────────────────────────────────────────
   isAutoPilot: boolean;
   activeLoopId: string | null;
   loopIteration: number;
   loopStatus: LoopStatus;
-
-  /** Accumulated diffs from the completed loop; shown in BatchDiffViewer. */
   pendingDiffBatch: DiffEntry[] | null;
 
-  /** Toggle Auto-Pilot mode on/off. Cannot toggle while a loop is running. */
   toggleAutoPilot: () => void;
-
-  /** Abort the currently running agentic loop. */
   abortAgenticLoop: () => Promise<void>;
-
-  /**
-   * Write the approved (and optionally filtered) files to disk.
-   * @param approvedPaths - Set of workspace paths to persist. If omitted, approves all.
-   */
   approveDiffBatch: (approvedPaths?: Set<string>) => Promise<void>;
-
-  /** Discard the pending diff batch without writing anything. */
   rejectDiffBatch: () => void;
 
-  // ── Voice & Audio state ────────────────────────────────────────────────────
   voiceActive: boolean;
   voiceGender: "male" | "female";
   setVoiceActive: (active: boolean) => void;
   setVoiceGender: (gender: "male" | "female") => void;
 }
 
+const MODE_BY_PERSONA = new Map(
+  COGNITIVE_MODES.map((mode) => [mode.personaName, mode]),
+);
+
 export const useFluxStore = create<FluxState>((set, get) => ({
-  // ── Existing defaults ──────────────────────────────────────────────────────
-  activePersona: PERSONA_DEFAULTS.name,
+  activePersona: DEFAULT_MODE.personaName,
   activeFile: null,
   isMobileSidebarOpen: false,
   messages: [],
@@ -94,14 +80,13 @@ export const useFluxStore = create<FluxState>((set, get) => ({
   addMessage: (message) =>
     set((state) => ({ messages: [...state.messages, message] })),
   setStreaming: (isStreaming) => set({ isStreaming }),
+  resetSession: () => set({ sessionId: null, messages: [] }),
 
-  // ── Voice & Audio defaults ─────────────────────────────────────────────────
   voiceActive: false,
   voiceGender: "male",
   setVoiceActive: (active) => set({ voiceActive: active }),
   setVoiceGender: (gender) => set({ voiceGender: gender }),
 
-  // ── Auto-Pilot defaults ────────────────────────────────────────────────────
   isAutoPilot: false,
   activeLoopId: null,
   loopIteration: 0,
@@ -109,25 +94,29 @@ export const useFluxStore = create<FluxState>((set, get) => ({
   pendingDiffBatch: null,
 
   toggleAutoPilot: () => {
-    const { loopStatus } = get();
-    if (loopStatus === "running") return; // Cannot toggle mid-loop
+    if (get().loopStatus === "running") {
+      return;
+    }
     set((state) => ({ isAutoPilot: !state.isAutoPilot }));
   },
 
-  // ── sendMessage — routes to standard SSE chat OR agentic loop ─────────────
-  sendMessage: async (prompt: string) => {
+  sendMessage: async (prompt: string, attachments: PendingAttachment[] = []) => {
     const { activePersona, sessionId, isAutoPilot } = get();
+    const selectedMode = MODE_BY_PERSONA.get(activePersona);
 
-    // Build and immediately append the user message
-    const userMsg: Message = {
+    const userMessage: Message = {
       id: `user_${Date.now()}`,
       role: "user",
       content: prompt,
       timestamp: Date.now(),
+      mode: activePersona,
     };
-    set((state) => ({ messages: [...state.messages, userMsg], isStreaming: true }));
 
-    // ── Auto-Pilot branch ──────────────────────────────────────────────────
+    set((state) => ({
+      messages: [...state.messages, userMessage],
+      isStreaming: true,
+    }));
+
     if (isAutoPilot) {
       const kernelMsgId = `kernel_${Date.now()}`;
       set((state) => ({
@@ -136,8 +125,9 @@ export const useFluxStore = create<FluxState>((set, get) => ({
           {
             id: kernelMsgId,
             role: "kernel",
-            content: "🤖 **Auto-Pilot Engaged** — Starting autonomous loop…",
+            content: "Auto-Pilot engaged. Starting autonomous loop...",
             timestamp: Date.now(),
+            mode: activePersona,
           },
         ],
         loopStatus: "running",
@@ -148,71 +138,73 @@ export const useFluxStore = create<FluxState>((set, get) => ({
         const { loop_id } = await startAgenticLoop({
           prompt,
           persona_name: activePersona,
-          system_prompt: PERSONA_DEFAULTS.systemPrompt,
+          system_prompt: selectedMode?.description ?? "FluxKernel autonomous mode",
         });
 
         set({ activeLoopId: loop_id });
 
-        // Stream loop events
         for await (const event of streamLoopEvents(loop_id)) {
-          const { loopStatus: currentStatus } = get();
-          if (currentStatus === "aborted") break;
+          if (get().loopStatus === "aborted") {
+            break;
+          }
 
           if (event.event === "iteration_start") {
-            set({ loopIteration: event.iteration });
+            set({ loopIteration: Number(event.iteration ?? 0) });
             set((state) => ({
-              messages: state.messages.map((m) =>
-                m.id === kernelMsgId
+              messages: state.messages.map((message) =>
+                message.id === kernelMsgId
                   ? {
-                      ...m,
-                      content: m.content + `\n\n🔄 **Iteration ${event.iteration} / ${event.max_iterations}** — Planning…`,
+                      ...message,
+                      content:
+                        message.content +
+                        `\n\nIteration ${event.iteration} / ${event.max_iterations}: planning...`,
                     }
-                  : m
+                  : message,
               ),
             }));
           } else if (event.event === "file_written") {
             set((state) => ({
-              messages: state.messages.map((m) =>
-                m.id === kernelMsgId
-                  ? { ...m, content: m.content + `\n  ✏ Wrote \`${event.path}\`` }
-                  : m
+              messages: state.messages.map((message) =>
+                message.id === kernelMsgId
+                  ? {
+                      ...message,
+                      content: `${message.content}\nWrote \`${String(event.path)}\``,
+                    }
+                  : message,
               ),
             }));
           } else if (event.event === "test_result") {
-            const icon = event.success ? "✅" : "❌";
+            const icon = event.success ? "PASS" : "FAIL";
             set((state) => ({
-              messages: state.messages.map((m) =>
-                m.id === kernelMsgId
+              messages: state.messages.map((message) =>
+                message.id === kernelMsgId
                   ? {
-                      ...m,
+                      ...message,
                       content:
-                        m.content +
-                        `\n  ${icon} Test ${event.success ? "passed" : "failed"} (exit ${event.exit_code})` +
-                        (event.stderr ? `\n\`\`\`\n${event.stderr.slice(0, 300)}\n\`\`\`` : ""),
+                        `${message.content}\n${icon} test run (exit ${String(event.exit_code)})` +
+                        (event.stderr ? `\n${String(event.stderr).slice(0, 300)}` : ""),
                     }
-                  : m
+                  : message,
               ),
             }));
           } else if (event.event === "loop_done") {
-            const batch: DiffEntry[] = (event.diff_batch ?? []).map((d: DiffEntry) => ({
-              path: d.path,
-              content: d.content,
-              iteration: d.iteration,
+            const batch = ((event.diff_batch ?? []) as DiffEntry[]).map((entry) => ({
+              path: entry.path,
+              content: entry.content,
+              iteration: entry.iteration,
             }));
             set({
               loopStatus: "completed",
               pendingDiffBatch: batch,
             });
             set((state) => ({
-              messages: state.messages.map((m) =>
-                m.id === kernelMsgId
+              messages: state.messages.map((message) =>
+                message.id === kernelMsgId
                   ? {
-                      ...m,
-                      content:
-                        m.content +
-                        `\n\n✨ **Loop Complete** — ${batch.length} file(s) ready for review.`,
+                      ...message,
+                      content: `${message.content}\n\nLoop complete. ${batch.length} file(s) ready for review.`,
                     }
-                  : m
+                  : message,
               ),
             }));
           } else if (event.event === "loop_aborted") {
@@ -220,22 +212,27 @@ export const useFluxStore = create<FluxState>((set, get) => ({
           } else if (event.event === "plan_error") {
             set({ loopStatus: "failed" });
             set((state) => ({
-              messages: state.messages.map((m) =>
-                m.id === kernelMsgId
-                  ? { ...m, content: m.content + `\n\n⚠ **Plan Error**: ${event.error}` }
-                  : m
+              messages: state.messages.map((message) =>
+                message.id === kernelMsgId
+                  ? {
+                      ...message,
+                      content: `${message.content}\n\nPlan error: ${String(event.error)}`,
+                    }
+                  : message,
               ),
             }));
           } else if (event.event === "stream_end") {
             break;
           }
         }
-      } catch (err) {
-        const errText = err instanceof Error ? err.message : "Agentic loop failed.";
+      } catch (error) {
+        const text = error instanceof Error ? error.message : "Agentic loop failed.";
         set((state) => ({
           loopStatus: "failed",
-          messages: state.messages.map((m) =>
-            m.id === kernelMsgId ? { ...m, content: `⚠ ${errText}` } : m
+          messages: state.messages.map((message) =>
+            message.id === kernelMsgId
+              ? { ...message, content: `Error: ${text}` }
+              : message,
           ),
         }));
       } finally {
@@ -245,21 +242,26 @@ export const useFluxStore = create<FluxState>((set, get) => ({
       return;
     }
 
-    // ── Standard SSE Chat branch (unchanged behaviour) ─────────────────────
     const kernelMsgId = `kernel_${Date.now()}`;
-    const kernelMsg: Message = {
-      id: kernelMsgId,
-      role: "kernel",
-      content: "",
-      timestamp: Date.now(),
-    };
-    set((state) => ({ messages: [...state.messages, kernelMsg] }));
+    set((state) => ({
+      messages: [
+        ...state.messages,
+        {
+          id: kernelMsgId,
+          role: "kernel",
+          content: "",
+          timestamp: Date.now(),
+          mode: activePersona,
+        },
+      ],
+    }));
 
     try {
       const stream = apiSendMessage({
         prompt,
         session_id: sessionId,
         persona_name: activePersona,
+        attachments,
       });
 
       for await (const event of stream) {
@@ -267,30 +269,34 @@ export const useFluxStore = create<FluxState>((set, get) => ({
           if (event.session_id && get().sessionId === null) {
             set({ sessionId: event.session_id });
           }
+
           set((state) => ({
-            messages: state.messages.map((m) =>
-              m.id === kernelMsgId
-                ? { ...m, content: m.content + event.content }
-                : m
+            messages: state.messages.map((message) =>
+              message.id === kernelMsgId
+                ? {
+                    ...message,
+                    content: `${message.content}${event.content}`,
+                    mode: event.mode ?? activePersona,
+                  }
+                : message,
             ),
           }));
         } else if (event.type === "error") {
           set((state) => ({
-            messages: state.messages.map((m) =>
-              m.id === kernelMsgId
-                ? { ...m, content: `⚠ Error: ${event.message ?? "Unknown error."}` }
-                : m
+            messages: state.messages.map((message) =>
+              message.id === kernelMsgId
+                ? { ...message, content: `Error: ${event.message ?? "Unknown error."}` }
+                : message,
             ),
           }));
           break;
         }
       }
-    } catch (err) {
-      const errText =
-        err instanceof Error ? err.message : "Could not reach the kernel.";
+    } catch (error) {
+      const text = error instanceof Error ? error.message : "Could not reach the kernel.";
       set((state) => ({
-        messages: state.messages.map((m) =>
-          m.id === kernelMsgId ? { ...m, content: `⚠ ${errText}` } : m
+        messages: state.messages.map((message) =>
+          message.id === kernelMsgId ? { ...message, content: `Error: ${text}` } : message,
         ),
       }));
     } finally {
@@ -298,33 +304,46 @@ export const useFluxStore = create<FluxState>((set, get) => ({
     }
   },
 
-  // ── Auto-Pilot actions ─────────────────────────────────────────────────────
-
   abortAgenticLoop: async () => {
     const { activeLoopId } = get();
-    if (!activeLoopId) return;
+    if (!activeLoopId) {
+      return;
+    }
     await apiAbortLoop(activeLoopId);
     set({ loopStatus: "aborted" });
   },
 
   approveDiffBatch: async (approvedPaths?: Set<string>) => {
     const { pendingDiffBatch } = get();
-    if (!pendingDiffBatch) return;
+    if (!pendingDiffBatch) {
+      return;
+    }
 
     const toWrite = approvedPaths
-      ? pendingDiffBatch.filter((d) => approvedPaths.has(d.path))
+      ? pendingDiffBatch.filter((entry) => approvedPaths.has(entry.path))
       : pendingDiffBatch;
 
     await Promise.all(
       toWrite.map((entry) =>
-        approveCodeDiff({ path: entry.path, content: entry.content })
-      )
+        approveCodeDiff({ path: entry.path, content: entry.content }),
+      ),
     );
 
-    set({ pendingDiffBatch: null, activeLoopId: null, loopIteration: 0, loopStatus: "idle" });
+    set({
+      pendingDiffBatch: null,
+      activeLoopId: null,
+      loopIteration: 0,
+      loopStatus: "idle",
+    });
   },
 
   rejectDiffBatch: () => {
-    set({ pendingDiffBatch: null, activeLoopId: null, loopIteration: 0, loopStatus: "idle" });
+    set({
+      pendingDiffBatch: null,
+      activeLoopId: null,
+      loopIteration: 0,
+      loopStatus: "idle",
+    });
   },
 }));
+

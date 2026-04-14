@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { Github, Mail, Lock, Zap } from "lucide-react";
 
@@ -40,9 +41,9 @@ export default function LoginPage() {
         {/* Logo / Brand */}
         <div className="mb-8 flex flex-col items-center gap-2">
           <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-violet-600/20 border border-violet-500/30 shadow-lg shadow-violet-900/30 p-2 overflow-hidden">
-            <img src="/logo.svg" alt="FluxKernel Logo" className="w-full h-full object-contain" />
+            <Image src="/logo.svg" alt="FluxKernel Logo" width={64} height={64} className="h-full w-full object-contain" />
           </div>
-          <img src="/brand.svg" alt="FluxKernel" className="h-8 w-auto object-contain mt-2 text-white" />
+          <Image src="/brand.svg" alt="FluxKernel" width={152} height={32} className="mt-2 h-8 w-auto object-contain text-white" />
           <p className="text-sm text-zinc-400">Sign in to your workspace</p>
         </div>
 
