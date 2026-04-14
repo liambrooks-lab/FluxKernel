@@ -69,6 +69,12 @@ interface FluxState {
 
   /** Discard the pending diff batch without writing anything. */
   rejectDiffBatch: () => void;
+
+  // ── Voice & Audio state ────────────────────────────────────────────────────
+  voiceActive: boolean;
+  voiceGender: "male" | "female";
+  setVoiceActive: (active: boolean) => void;
+  setVoiceGender: (gender: "male" | "female") => void;
 }
 
 export const useFluxStore = create<FluxState>((set, get) => ({
@@ -88,6 +94,12 @@ export const useFluxStore = create<FluxState>((set, get) => ({
   addMessage: (message) =>
     set((state) => ({ messages: [...state.messages, message] })),
   setStreaming: (isStreaming) => set({ isStreaming }),
+
+  // ── Voice & Audio defaults ─────────────────────────────────────────────────
+  voiceActive: false,
+  voiceGender: "male",
+  setVoiceActive: (active) => set({ voiceActive: active }),
+  setVoiceGender: (gender) => set({ voiceGender: gender }),
 
   // ── Auto-Pilot defaults ────────────────────────────────────────────────────
   isAutoPilot: false,

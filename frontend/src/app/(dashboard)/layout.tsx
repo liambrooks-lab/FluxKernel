@@ -4,7 +4,7 @@ import React from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useFluxStore } from "@/store/useFluxStore";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { Menu, X, Terminal, Workflow } from "lucide-react";
+import { Menu, X, Terminal, Workflow, Volume2, VolumeX, User, UserCircle } from "lucide-react";
 import { FileExplorer } from "@/components/workspace/FileExplorer";
 import { ImageCanvas } from "@/components/workspace/ImageCanvas";
 
@@ -14,7 +14,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const isMobile = useIsMobile();
-  const { isMobileSidebarOpen, toggleMobileSidebar, activeFile } = useFluxStore();
+  const { isMobileSidebarOpen, toggleMobileSidebar, activeFile, voiceActive, voiceGender, setVoiceActive, setVoiceGender } = useFluxStore();
 
   return (
     <div className="flex h-screen w-full flex-col overflow-hidden bg-background">
@@ -96,6 +96,22 @@ export default function DashboardLayout({
                 <button className="text-muted-foreground hover:text-foreground transition-colors p-1" title="Workflows">
                   <Workflow className="h-4 w-4" />
                 </button>
+                <button 
+                  onClick={() => setVoiceActive(!voiceActive)}
+                  className="text-muted-foreground hover:text-foreground transition-colors p-1 flex items-center" 
+                  title="Toggle Voice"
+                >
+                  {voiceActive ? <Volume2 className="h-4 w-4 text-green-500" /> : <VolumeX className="h-4 w-4" />}
+                </button>
+                {voiceActive && (
+                  <button 
+                    onClick={() => setVoiceGender(voiceGender === 'male' ? 'female' : 'male')}
+                    className="text-muted-foreground hover:text-foreground transition-colors p-1 text-xs font-semibold uppercase flex items-center gap-1"
+                    title="Toggle Gender"
+                  >
+                    {voiceGender === 'male' ? <User className="h-3 w-3" /> : <UserCircle className="h-3 w-3 text-pink-400" />} {voiceGender[0]}
+                  </button>
+                )}
                 <div className="w-px h-4 bg-border mx-1"></div>
                 <ThemeToggle />
               </div>

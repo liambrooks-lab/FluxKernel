@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useRef, useState, KeyboardEvent } from "react";
-import { Paperclip, Send, Loader2 } from "lucide-react";
+import { Paperclip, Send, Loader2, Mic } from "lucide-react";
 import { useFluxStore } from "@/store/useFluxStore";
 import { cn } from "@/lib/utils";
 
 export function ChatInput() {
   const [content, setContent] = useState("");
+  const [isRecording, setIsRecording] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { sendMessage, isStreaming } = useFluxStore();
 
@@ -14,6 +15,15 @@ export function ChatInput() {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
       textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
+    }
+  };
+
+  const toggleRecording = () => {
+    setIsRecording(!isRecording);
+    if (!isRecording) {
+      setContent((prev) => prev + (prev.length > 0 ? " " : "") + "[🎙 Recording...]");
+    } else {
+      setContent((prev) => prev.replace("[🎙 Recording...]", "").trim() + " (Voice transcribed text)");
     }
   };
 
@@ -59,9 +69,26 @@ export function ChatInput() {
       />
 
       <button
+        onClick={toggleRecording}
+        disabled={isStreaming}
+        className={cn(
+          "flex h-9 w-9 items-center justify-center rounded-md transition-colors flex-shrink-0",
+          isRecording 
+            ? "bg-red-500 text-white animate-pulse" 
+            : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+        )}
+        aria-label="Toggle voice recording"
+      >
+        <Mic className="h-4 w-4" />
+      </button>
+
+      <button
         onClick={handleSend}
-        disabled={!canSend}
-        className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex-shrink-0"
+        disabled={!canSend && !isRecording}
+        className={cn(
+          "flex h-9 w-9 items-center justify-center rounded-md text-primary-foreground transition-all flex-shrink-0",
+          !canSend && !isRecording ? "opacity-40 cursor-not-allowed bg-primary/80" : "bg-primary hover:opacity-90"
+        )}
         aria-label="Send message"
       >
         {isStreaming
