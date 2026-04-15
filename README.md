@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <strong>An MNC-grade, OS-level AI Agent with an unfiltered cognitive core.</strong><br/>
+  <strong>An OS-level AI Agent with an unfiltered cognitive core.</strong><br/>
   Built for engineers who demand full system access, persistent memory, and zero guard-rails in their local environment.
 </p>
 
