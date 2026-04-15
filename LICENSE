@@ -1,28 +1,35 @@
 Custom Restricted License
 
-Copyright (c) 2026 Rudranarayan Jena
-
-All rights reserved.
+Copyright (c) 2026 Rudranarayan Jena. All rights reserved.
 
 1. Ownership
-This project, including its source code, design, and associated files, is the exclusive property of the author.
+   This software project, including its source code, architecture, design, documentation, and all associated assets (collectively, the “Project”), is the sole and exclusive intellectual property of the author.
 
-2. Restrictions
-No person or organization is permitted to:
-- Copy, reproduce, or distribute this project
-- Modify or create derivative works
-- Use this project for commercial or non-commercial purposes
+2. Grant of rights
+   No rights, licenses, or permissions are granted to any individual or entity, whether expressly or implicitly, except as explicitly stated in this license.
 
-WITHOUT explicit prior written permission from the author.
+3. Restrictions
+   Without prior written consent from the author, no person or organization may:
 
-3. Permission Clause
-Any individual or organization wishing to use, learn from, or build upon this project must obtain prior written consent from the author.
+* copy, reproduce, publish, or distribute the Project in any form
+* modify, adapt, reverse-engineer, or create derivative works
+* use the Project for commercial or non-commercial purposes
+* host, share, or make the Project publicly accessible
 
-4. Unauthorized Use
-Any unauthorized use, reproduction, or distribution of this project is strictly prohibited and may result in legal action.
+Any unauthorized use is strictly prohibited.
 
-5. No Warranty
-This software is provided "AS IS", without warranty of any kind, express or implied.
+4. Permission requirement
+   Any individual or organization wishing to use, study, analyze, or build upon the Project must obtain explicit prior written permission from the author.
 
-6. Liability
-The author shall not be held liable for any damages arising from the use of this software.
+5. Enforcement and violations
+   Unauthorized use, reproduction, or distribution of the Project constitutes a violation of intellectual property rights and may result in legal action, including claims for damages and injunctive relief.
+
+6. Disclaimer of warranty
+   The Project is provided “as is”, without warranty of any kind, express or implied, including but not limited to merchantability, fitness for a particular purpose, and non-infringement.
+
+7. Limitation of liability
+   In no event shall the author be liable for any direct, indirect, incidental, special, or consequential damages arising from the use of or inability to use the Project.
+
+8. Governing law
+   This license shall be governed by and construed in accordance with applicable laws.
+
